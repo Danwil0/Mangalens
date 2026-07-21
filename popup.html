@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MangaLens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d1a;
+      --surface:   rgba(255,255,255,0.05);
+      --surface2:  rgba(255,255,255,0.08);
+      --border:    rgba(255,255,255,0.1);
+      --accent1:   #7c3aed;
+      --accent2:   #06b6d4;
+      --text:      #e8e8f0;
+      --text-dim:  #888;
+      --success:   #22c55e;
+      --error:     #ef4444;
+      --radius:    12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      width: 380px;
+      min-height: 480px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient glow blobs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -80px; left: -80px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -60px; right: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(6,182,212,0.15));
+      border-bottom: 1px solid var(--border);
+      padding: 18px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    .logo {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.4);
+    }
+
+    .header-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #c4b5fd, #67e8f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.3px;
+    }
+
+    .header-text p {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .header-toggle {
+      margin-left: auto;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+
+    .header-toggle span {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Content ── */
+    .content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    /* ── Toggle Switch ── */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .setting-row + .setting-row {
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+      padding-top: 10px;
+    }
+
+    .setting-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setting-label strong {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .setting-label small {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .toggle {
+      position: relative;
+      width: 42px; height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.12);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.25s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+    }
+
+    /* ── API Key Input ── */
+    .api-key-group {
+      position: relative;
+      margin-top: 4px;
+    }
+
+    .api-key-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', monospace, sans-serif;
+      font-size: 12px;
+      padding: 9px 40px 9px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .api-key-input:focus {
+      border-color: var(--accent1);
+    }
+
+    .api-key-input::placeholder { color: var(--text-dim); }
+
+    .api-key-toggle {
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .api-key-toggle:hover { color: var(--text); }
+
+    .api-key-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+      min-height: 16px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .status-dot.valid   { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .status-dot.invalid { background: var(--error);   box-shadow: 0 0 6px var(--error); }
+
+    .save-btn {
+      margin-top: 8px;
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .save-btn:hover  { opacity: 0.9; }
+    .save-btn:active { transform: scale(0.98); }
+
+    .save-btn.saved {
+      background: var(--success);
+    }
+
+    /* ── Stats Grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #c4b5fd, #67e8f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Model select ── */
+    .model-select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .model-select:focus { border-color: var(--accent1); }
+
+    .select-wrap { position: relative; }
+
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 0 16px 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .footer-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+
+    .footer-btn:hover {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .footer-btn.danger:hover {
+      background: rgba(239,68,68,0.15);
+      color: var(--error);
+      border-color: rgba(239,68,68,0.3);
+    }
+
+    /* ── Disabled state overlay ── */
+    .disabled-banner {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: var(--radius-sm);
+      color: #fca5a5;
+      font-size: 11px;
+      padding: 7px 10px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .disabled-banner.visible { display: block; }
+
+    /* ── Help link ── */
+    .help-row {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      padding-bottom: 4px;
+    }
+    .help-row a {
+      color: #7c3aed;
+      text-decoration: none;
+    }
+    .help-row a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🔭</div>
+    <div class="header-text">
+      <h1>MangaLens</h1>
+      <p>AI Manga Translator · v1.0</p>
+    </div>
+    <div class="header-toggle">
+      <label class="toggle" id="main-toggle-wrap" title="Enable / Disable MangaLens">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="toggle-slider"></span>
+      </label>
+      <span>On / Off</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="content">
+
+    <div id="disabled-banner" class="disabled-banner">
+      MangaLens is OFF — toggle above to re-enable
+    </div>
+
+    <!-- Settings card -->
+    <div class="card">
+      <div class="card-title">⚙️  Settings</div>
+
+      <!-- Auto translate -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <strong>Auto-Translate</strong>
+          <small>Translate panels as you scroll</small>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-auto" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Gemini Model -->
+      <div class="setting-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <div class="setting-label">
+          <strong>Gemini Model</strong>
+          <small>Use 🔍 to find models for your key</small>
+        </div>
+        <div style="display:flex; gap:6px; width:100%;">
+          <div class="select-wrap" style="flex:1">
+            <select id="model-select" class="model-select">
+              <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite — 15 RPM · 1,000/day FREE ★</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash — 10 RPM · 250/day FREE</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro — 5 RPM · 100/day FREE</option>
+              <option value="gemini-3.5-flash">gemini-3.5-flash — Preview (dynamic limits)</option>
+              <option value="gemini-3.1-flash">gemini-3.1-flash — Preview</option>
+              <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite — Preview</option>
+              <option value="custom">Custom… (type below)</option>
+            </select>
+          </div>
+          <button class="footer-btn" id="check-models-btn" title="Fetch models supported by your API key" style="flex-shrink:0; padding:0 10px;">
+            🔍
+          </button>
+        </div>
+        <input
+          type="text"
+          id="custom-model-input"
+          class="api-key-input"
+          placeholder="e.g. gemini-3.5-flash"
+          style="display:none; margin-top:2px;"
+          spellcheck="false"
+        />
+        <div id="model-status" style="font-size:11px; color:#888; min-height:14px;"></div>
+      </div>
+    </div>
+
+    <!-- API Key card -->
+    <div class="card">
+      <div class="card-title">🔑  Gemini API Key</div>
+      <div class="api-key-group">
+        <input
+          type="password"
+          id="api-key"
+          class="api-key-input"
+          placeholder="Paste your Gemini API key here…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="api-key-toggle" id="toggle-key-vis" title="Show / hide key">
+          <svg id="eye-icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+      <div class="api-key-status">
+        <span class="status-dot" id="key-dot"></span>
+        <span id="key-status-text">No API key saved</span>
+      </div>
+      <button class="save-btn" id="save-key">Save API Key</button>
+      <div class="help-row" style="margin-top:8px;">
+        Get a free key at <a href="https://aistudio.google.com/apikey" id="studio-link" target="_blank">aistudio.google.com</a>
+      </div>
+    </div>
+
+    <!-- Stats card -->
+    <div class="card">
+      <div class="card-title">📊  Usage</div>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-value" id="stat-today">—</div>
+          <div class="stat-label">Today</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-cache">—</div>
+          <div class="stat-label">Cached</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="footer-btn danger" id="clear-cache">
+      🗑 Clear Cache
+    </button>
+    <button class="footer-btn" id="reload-tab">
+      🔄 Reload Tab
+    </button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

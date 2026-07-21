@@ -1,0 +1,273 @@
+/* ============================================================
+   MangaLens — Content Script Styles
+   All classes prefixed with .ml- to avoid conflicts
+   ============================================================ */
+
+/* ── Overlay container (sits on top of manga image) ── */
+.ml-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2147483640;
+  top: 0; left: 0;
+  overflow: visible;
+  border-radius: 4px;
+  animation: ml-fade-in 0.3s ease;
+  container-type: size;
+}
+
+.ml-overlay.ml-hidden .ml-bubble {
+  display: none !important;
+}
+
+/* ── Individual translation bubble ── */
+.ml-bubble {
+  position: absolute;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'CC Wild Words', 'Comic Sans MS', 'Wild Words', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(11px, 1.8cqw, 20px);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  border-radius: 6px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  overflow: visible;
+  border: none;
+  box-shadow: none;
+  pointer-events: auto;
+  cursor: default;
+  word-break: break-word;
+  white-space: normal;
+  z-index: 2147483641;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.ml-bubble:hover {
+  background: #fffdf0;
+  transform: scale(1.04);
+  z-index: 2147483645;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Tooltip showing original text */
+.ml-bubble::after {
+  content: attr(data-original);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.ml-bubble:hover::after {
+  opacity: 1;
+}
+
+/* ── Language badge (top-left of overlay) ── */
+.ml-lang-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0.92;
+  z-index: 1;
+}
+
+/* ── Toggle button (top-right of overlay) ── */
+.ml-toggle-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(15, 15, 26, 0.82);
+  color: #e0e0e0;
+  border: 1px solid rgba(124, 58, 237, 0.5);
+  border-radius: 20px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.ml-toggle-btn:hover {
+  background: rgba(124, 58, 237, 0.7);
+  border-color: #7c3aed;
+  transform: scale(1.05);
+}
+
+/* ── Hover translate trigger button (on image hover) ── */
+.ml-trigger {
+  position: absolute;
+  width: auto !important;
+  height: auto !important;
+  max-width: fit-content !important;
+  max-height: fit-content !important;
+  align-self: flex-start !important;
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  z-index: 2147483641;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s;
+  box-shadow: 0 3px 12px rgba(124, 58, 237, 0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.ml-trigger svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.ml-trigger.ml-trigger--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ml-trigger.ml-trigger--done {
+  background: rgba(15, 15, 26, 0.85);
+  border: 1px solid rgba(124, 58, 237, 0.6);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+
+.ml-trigger:hover {
+  transform: scale(1.06);
+  box-shadow: 0 5px 18px rgba(124, 58, 237, 0.65);
+}
+
+.ml-trigger:active {
+  transform: scale(0.97);
+}
+
+/* ── Loading spinner overlay ── */
+.ml-loader {
+  position: absolute;
+  background: rgba(10, 10, 20, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 2147483642;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  animation: ml-fade-in 0.25s ease;
+  pointer-events: none;
+}
+
+.ml-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ml-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(124, 58, 237, 0.25);
+  border-top-color: #7c3aed;
+  border-right-color: #06b6d4;
+  border-radius: 50%;
+  animation: ml-spin 0.8s linear infinite;
+}
+
+/* ── Error toast ── */
+.ml-error-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1e1e2e;
+  color: #ff8080;
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  border-radius: 10px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  max-width: 340px;
+  z-index: 2147483647;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  animation: ml-slide-in 0.3s ease;
+  pointer-events: none;
+}
+
+/* ── No-text notice ── */
+.ml-no-text {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 15, 26, 0.82);
+  color: #aaa;
+  border-radius: 20px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+  animation: ml-fade-in 0.2s ease;
+}
+
+/* ── Keyframes ── */
+@keyframes ml-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ml-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ml-slide-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
