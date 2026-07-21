@@ -15,6 +15,7 @@ It erases original manga text and draws the English translation directly onto th
 - **Overlay Fallback**: Renders HTML text overlays if canvas inpainting is unavailable.
 - **Local Storage Caching**: Saves translations locally to avoid redundant API requests.
 <img width="805" height="990" alt="Screenshot 2026-07-21 122705" src="https://github.com/user-attachments/assets/86fbcb38-7cbe-403c-99ec-7e29e8b26097" />
+<img width="770" height="1008" alt="Screenshot 2026-07-21 122716" src="https://github.com/user-attachments/assets/81fec140-1bbb-4e69-b151-e76c12d084f1" />
 
 ---
 
