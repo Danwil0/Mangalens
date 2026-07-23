@@ -72,8 +72,3 @@ Follow these steps to install MangaLens in your browser:
 - Google Gemini free tier permits 10 to 15 requests per minute.
 - Wait a few seconds. MangaLens handles retries automatically.
 
----
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for full details.

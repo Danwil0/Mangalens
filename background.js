@@ -26,29 +26,28 @@ const MODEL_FALLBACKS = [
   'gemini-3.1-flash-lite',
 ];
 
-const TRANSLATE_PROMPT = `You are a professional manga/comic OCR and translation AI.
-Examine this image carefully for ALL text, speech bubbles, thought bubbles, captions, titles, sound effects, and side text.
-Detect the source language automatically (e.g. Vietnamese, Japanese, Korean, Chinese, Thai).
+const TRANSLATE_PROMPT = `You are a professional manga/comic translator.
 
-For EVERY piece of text found, locate its bounding box on a 1000x1000 normalized grid as [ymin, xmin, ymax, xmax].
-Provide:
-1. "original": The exact text in the original language
-2. "translation": A natural, accurate English translation
-3. "box_2d": [ymin, xmin, ymax, xmax] as integer coordinates between 0 and 1000.
+IMPORTANT RULES:
+1. Find ALL speech bubbles, thought bubbles, captions, sound effects and text in this manga page.
+2. For each text block, return a TIGHT bounding box that covers ONLY the text area inside the bubble, NOT the entire bubble outline. The box must stay within the white area of the speech bubble.
+3. Use a 1000×1000 normalized grid: box_2d = [ymin, xmin, ymax, xmax] as integers 0-1000.
+4. Translations MUST be SHORT and CONCISE. Manga bubbles are small. Use as few words as possible while keeping the meaning clear. Abbreviate where natural. Never add words that are not in the original.
+5. Detect the source language automatically.
 
-Output MUST be strictly valid JSON without markdown code fences:
+Output strictly valid JSON (no code fences):
 {
   "language": "Vietnamese",
   "panels": [
     {
-      "original": "Text here",
-      "translation": "English translation here",
-      "box_2d": [120, 150, 280, 450]
+      "original": "original text",
+      "translation": "short English translation",
+      "box_2d": [ymin, xmin, ymax, xmax]
     }
   ]
 }
 
-If no text is present in the image, return: {"language":"none","panels":[]}`;
+If no text exists, return: {"language":"none","panels":[]}`;
 
 // ─── Message Router ────────────────────────────────────────
 

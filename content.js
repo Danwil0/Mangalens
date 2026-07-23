@@ -413,25 +413,16 @@
         bubble.textContent = panel.translation;
         bubble.dataset.original = panel.original || '';
 
-        // English text needs more horizontal space than vertical Japanese/Vietnamese text.
-        // If the original box is very tall and thin, we expand its width dynamically.
-        let baseW = panel.width != null ? panel.width : 0.3;
-        let baseH = panel.height != null ? panel.height : 0.08;
-
-        if (baseH > baseW * 1.2) {
-          baseW = Math.max(baseW * 1.8, 0.25); // Expand width significantly for vertical text
-        }
-
-        const x = clamp(panel.x != null ? panel.x : 0.1, 0.01, 0.85);
-        const y = clamp(panel.y != null ? panel.y : 0.1, 0.01, 0.85);
-        const w = clamp(baseW, 0.15, 0.98 - x);
-        const h = clamp(baseH, 0.04, 0.98 - y);
+        // Use exact bounding box from Gemini — no artificial inflation
+        const x = clamp(panel.x != null ? panel.x : 0.1, 0.0, 1.0);
+        const y = clamp(panel.y != null ? panel.y : 0.1, 0.0, 1.0);
+        const w = clamp(panel.width != null ? panel.width : 0.2, 0.02, 1.0 - x);
+        const h = clamp(panel.height != null ? panel.height : 0.05, 0.02, 1.0 - y);
 
         bubble.style.left = `${(x * 100).toFixed(2)}%`;
         bubble.style.top = `${(y * 100).toFixed(2)}%`;
-        // Use minWidth so text can push it wider if absolutely necessary, but keep a base width
         bubble.style.width = `${(w * 100).toFixed(2)}%`;
-        bubble.style.minHeight = `${(h * 100).toFixed(2)}%`;
+        bubble.style.height = `${(h * 100).toFixed(2)}%`;
 
         container.appendChild(bubble);
       }
@@ -762,34 +753,29 @@
         for (const panel of panels) {
           if (!panel.translation) continue;
 
-          let baseW = panel.width != null ? panel.width : 0.3;
-          let baseH = panel.height != null ? panel.height : 0.08;
-
-          if (baseH > baseW * 1.2) {
-            baseW = Math.max(baseW * 1.8, 0.25);
-          }
-
-          const xRatio = clamp(panel.x != null ? panel.x : 0.1, 0.01, 0.85);
-          const yRatio = clamp(panel.y != null ? panel.y : 0.1, 0.01, 0.85);
-          const wRatio = clamp(baseW, 0.15, 0.98 - xRatio);
-          const hRatio = clamp(baseH, 0.04, 0.98 - yRatio);
+          // Use the exact bounding box from Gemini — do NOT inflate
+          const xRatio = clamp(panel.x != null ? panel.x : 0.1, 0.0, 1.0);
+          const yRatio = clamp(panel.y != null ? panel.y : 0.1, 0.0, 1.0);
+          const wRatio = clamp(panel.width != null ? panel.width : 0.2, 0.02, 1.0 - xRatio);
+          const hRatio = clamp(panel.height != null ? panel.height : 0.05, 0.02, 1.0 - yRatio);
 
           const x = xRatio * W;
           const y = yRatio * H;
           const w = wRatio * W;
           const h = hRatio * H;
 
-          // 1. Erase Vietnamese/Japanese text by painting a white rounded rectangle over the speech bubble
+          // Erase original text with a white rectangle inset by 1px to avoid bleeding outside the bubble
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
+          const inset = 1;
           if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(x - 2, y - 2, w + 4, h + 4, 8);
+            ctx.roundRect(x + inset, y + inset, w - inset * 2, h - inset * 2, 4);
           } else {
-            ctx.rect(x - 2, y - 2, w + 4, h + 4);
+            ctx.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
           }
           ctx.fill();
 
-          // 2. Render English translation text directly into the bubble
+          // Render English translation text fitted inside the box
           drawTextInBox(ctx, panel.translation, x, y, w, h);
         }
 
@@ -814,52 +800,41 @@
   function drawTextInBox(ctx, text, x, y, w, h) {
     ctx.save();
 
-    const padding = Math.max(4, w * 0.03);
+    const padding = Math.max(3, Math.min(w, h) * 0.04);
     const availW = w - padding * 2;
     const availH = h - padding * 2;
 
-    // Calculate font size
-    let fontSize = Math.min(availH * 0.28, availW * 0.14, 28);
-    fontSize = Math.max(fontSize, 11);
+    if (availW < 5 || availH < 5) { ctx.restore(); return; }
 
+    // Start with a reasonable font size and shrink until it fits
+    let fontSize = Math.min(availH * 0.35, availW * 0.15, 26);
+    fontSize = Math.max(fontSize, 8);
+
+    const fontFamily = '"CC Wild Words", "Comic Sans MS", "Wild Words", sans-serif';
+    let lines = [];
+    let lineHeight;
+    const MIN_FONT = 7;
+
+    // Iteratively shrink font until all text fits within the box
+    while (fontSize >= MIN_FONT) {
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      lineHeight = fontSize * 1.18;
+      lines = wrapText(ctx, text, availW);
+
+      if (lines.length * lineHeight <= availH) break;
+      fontSize -= 0.5;
+    }
+
+    // Final clamp
+    fontSize = Math.max(fontSize, MIN_FONT);
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    lineHeight = fontSize * 1.18;
+    lines = wrapText(ctx, text, availW);
+
+    // Draw text centered in the box
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    const words = text.split(' ');
-    let lines = [];
-    let currentLine = '';
-
-    for (let word of words) {
-      ctx.font = `bold ${fontSize}px "CC Wild Words", "Comic Sans MS", "Wild Words", sans-serif`;
-      let testLine = currentLine ? `${currentLine} ${word}` : word;
-      if (ctx.measureText(testLine).width > availW && currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-
-    // If text spills out vertically, shrink font size slightly
-    const lineHeight = fontSize * 1.2;
-    if (lines.length * lineHeight > availH && fontSize > 10) {
-      fontSize = Math.max(10, fontSize * 0.85);
-      lines = [];
-      currentLine = '';
-      for (let word of words) {
-        ctx.font = `bold ${fontSize}px "CC Wild Words", "Comic Sans MS", "Wild Words", sans-serif`;
-        let testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (ctx.measureText(testLine).width > availW && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-    }
 
     const totalH = lines.length * lineHeight;
     const startY = y + h / 2 - totalH / 2 + lineHeight / 2;
@@ -869,6 +844,24 @@
     }
 
     ctx.restore();
+  }
+
+  function wrapText(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
   }
 
   // ── Helpers ────────────────────────────────────────────────
